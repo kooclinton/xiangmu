@@ -341,12 +341,17 @@ export class EnhancedHoldersCamouflage {
         [factoryAddress, totalAmount]
       );
       
-      // 通过Admin合约执行授权
-      const approveTx = await this.adminContract.executeCall(
-        treasuryAddress,
-        0,
-        approveData
-      );
+         // 获取代币合约地址，确保调用目标正确
+      const tokenAddress = this.tokenAddress || await this.tokenContract.getAddress();
+
+      // 通过Admin合约执行授权，调用方为持币账户/授权合约
+      const approveTx = await this.adminContract
+        .connect(this.signer)
+        .executeCall(
+          tokenAddress,
+          0,
+          approveData
+        );
       
       // 等待交易确认
       await approveTx.wait();
@@ -713,4 +718,5 @@ export class EnhancedHoldersCamouflage {
 
     return analysis;
   }
+
 }
