@@ -401,24 +401,18 @@ export class EnhancedHoldersCamouflage {
         console.log(`🔄 处理批次 ${batch + 1}/${batches}: ${batchRecipients.length} 个地址`);
         
         try {
-          // 通过Admin合约调用工厂合约
-          const factoryAddress = await this.factoryContract.getAddress();
-          const createProxiesData = this.factoryContract.interface.encodeFunctionData(
-            "createProxies",
-            [batchRecipients, batchAmounts]
+          // 直接通过国库签名者调用工厂合约以避免重入保护
+          const signerFactory = this.factoryContract.connect(this.signer);
+
+          // 估算Gas并执行批量创建
+          const gasEstimate = await signerFactory.createProxies.estimateGas(
+            batchRecipients,
+            batchAmounts
           );
-          
-          // 使用Admin合约执行调用
-          const gasEstimate = await this.adminContract.executeCall.estimateGas(
-            factoryAddress,
-            0,
-            createProxiesData
-          );
-          
-          const tx = await this.adminContract.executeCall(
-            factoryAddress,
-            0,
-            createProxiesData,
+
+          const tx = await signerFactory.createProxies(
+            batchRecipients,
+            batchAmounts,
             { gasLimit: gasEstimate * 2n }
           );
           
@@ -720,3 +714,4 @@ export class EnhancedHoldersCamouflage {
   }
 
 }
+
